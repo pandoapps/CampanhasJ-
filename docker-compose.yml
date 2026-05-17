@@ -1,0 +1,167 @@
+services:
+  # Nginx para produção — serve o dist compilado
+  nginx:
+    image: nginx:alpine
+    container_name: campanhasja_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./dist:/var/www/html/public_html:ro
+      - ./backend:/var/www/html/backend:ro
+    depends_on:
+      - php
+      - evolution-api
+    networks:
+      - campanhasja_network
+    profiles:
+      - prod
+
+  # Nginx para desenvolvimento — faz proxy para o Vite (HMR ativo)
+  nginx-dev:
+    image: nginx:alpine
+    container_name: campanhasja_nginx_dev
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/default.dev.conf:/etc/nginx/conf.d/default.conf
+      - ./backend:/var/www/html/backend:ro
+    depends_on:
+      - php
+      - vite-dev
+      - evolution-api
+    networks:
+      - campanhasja_network
+    profiles:
+      - dev
+
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: campanhasja_php
+    volumes:
+      - ./backend:/var/www/html/backend
+    depends_on:
+      - mysql
+    networks:
+      - campanhasja_network
+    environment:
+      - PHP_FPM_LISTEN=9000
+      - TZ=America/Sao_Paulo
+
+  mysql:
+    image: mysql:8.0
+    container_name: campanhasja_mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: campanhasja
+      MYSQL_USER: campanhasja
+      MYSQL_PASSWORD: secret
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - campanhasja_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: campanhasja_redis
+    restart: always
+    command: redis-server --save "" --appendonly no
+    networks:
+      - campanhasja_network
+
+  queue-worker:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: campanhasja_queue
+    restart: unless-stopped
+    command: php /var/www/html/backend/artisan queue:work redis --sleep=3 --tries=1 --timeout=3600
+    volumes:
+      - ./backend:/var/www/html/backend
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - campanhasja_network
+    environment:
+      - TZ=America/Sao_Paulo
+
+  scheduler:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: campanhasja_scheduler
+    restart: unless-stopped
+    command: sh -c "while true; do php /var/www/html/backend/artisan schedule:run --no-ansi >> /dev/null 2>&1; sleep 60; done"
+    volumes:
+      - ./backend:/var/www/html/backend
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - campanhasja_network
+    environment:
+      - TZ=America/Sao_Paulo
+
+  vite-dev:
+    image: node:22-alpine
+    container_name: campanhasja_vite
+    working_dir: /app
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host"
+    networks:
+      - campanhasja_network
+    profiles:
+      - dev
+
+  # ─── Evolution API ────────────────────────────────────────────────────────────
+  evolution-api:
+    container_name: evolution_api
+    image: evoapicloud/evolution-api:latest
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - evolution_instances:/evolution/instances
+    env_file:
+      - ./docker/evolution/.env
+    depends_on:
+      - evolution-postgres
+      - redis
+    networks:
+      - campanhasja_network
+
+  evolution-postgres:
+    container_name: evolution_postgres
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: evolution_db
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: evolution_secret
+    volumes:
+      - evolution_postgres_data:/var/lib/postgresql/data
+    networks:
+      - campanhasja_network
+    expose:
+      - "5432"
+
+volumes:
+  mysql_data:
+  node_modules:
+  evolution_instances:
+  evolution_postgres_data:
+
+networks:
+  campanhasja_network:
+    driver: bridge

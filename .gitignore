@@ -1,0 +1,38 @@
+# Node
+node_modules/
+dist/
+.npm
+
+# Laravel
+backend/vendor/
+backend/.env
+backend/storage/logs/*.log
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/bootstrap/cache/*.php
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker/data/
+
+# Vite
+*.local
+dist-ssr/
+
+# TypeScript
+*.tsbuildinfo
