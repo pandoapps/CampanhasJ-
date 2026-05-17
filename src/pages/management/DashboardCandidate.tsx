@@ -49,7 +49,6 @@ export function DashboardCandidate() {
     { label: 'Campanhas', value: campaigns.length, icon: '📩', trend: activeCamps + ' ativas' },
     { label: 'Mensagens Enviadas', value: totalSent.toLocaleString('pt-BR'), icon: '📈', trend: 'total' },
     { label: 'Concluídas', value: campaigns.filter((c) => c.status === 'completed').length, icon: '✅', trend: 'finalizadas' },
-    { label: 'Rascunhos', value: campaigns.filter((c) => c.status === 'draft').length, icon: '📝', trend: 'pendentes' },
   ];
 
   const statusBadge = (s: string) => {
@@ -76,15 +75,9 @@ export function DashboardCandidate() {
           <h2 className="text-lg font-medium">Olá, {user?.name} 👋</h2>
           <p className="text-xs text-gray-400">Acompanhe o desempenho da sua candidatura</p>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <input type="text" placeholder="Buscar..." className="input-glass w-56 pl-4 pr-10 text-sm h-10" />
-            <span className="absolute right-3 top-2.5 opacity-40">🔍</span>
-          </div>
-        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {stats.map((stat, i) => (
           <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
             <GlassCard className="p-5 rounded-2xl">
@@ -175,7 +168,7 @@ export function DashboardCandidate() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {campaigns.slice(0, 5).map((c) => (
+                {[...campaigns].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5).map((c) => (
                   <tr key={c.id} className="hover:bg-white/5 transition-colors group">
                     <td className="px-6 py-4 font-medium group-hover:text-primary transition-colors">{c.name}</td>
                     <td className="px-6 py-4 text-center"><span className={`badge ${statusBadge(c.status)}`}>{statusLabel(c.status)}</span></td>
