@@ -106,6 +106,7 @@ export function DashboardCandidate() {
             <div className="h-48 flex items-center justify-center text-white/30 text-sm">Carregando...</div>
           ) : (() => {
             const max = Math.max(...dailyStats.map((d) => d.count), 1);
+            const BAR_MAX_PX = 140;
             return (
               <div className="flex items-end justify-between h-48 px-2 gap-2">
                 {dailyStats.map((d) => (
@@ -113,7 +114,7 @@ export function DashboardCandidate() {
                     <span className="text-[10px] text-white/40 font-mono">{d.count > 0 ? d.count : ''}</span>
                     <div
                       className="w-full chart-bar"
-                      style={{ height: `${Math.max((d.count / max) * 100, d.count === 0 ? 4 : 0)}%` }}
+                      style={{ height: `${Math.max((d.count / max) * BAR_MAX_PX, d.count === 0 ? 3 : 0)}px` }}
                     />
                     <span className="text-[10px] text-gray-400 font-medium capitalize">{d.label}</span>
                   </div>
