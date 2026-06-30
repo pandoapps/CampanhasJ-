@@ -25,13 +25,13 @@ class DatabaseSeeder extends Seeder
         // Candidatos de teste
         $candidates = [
             [
-                'name' => 'João Silva',
-                'email' => 'candidato1@campanhasja.com',
+                'name' => 'Tomio',
+                'email' => 'tomio@campanhasja.com',
                 'plan' => 'profissional',
             ],
             [
-                'name' => 'Maria Luíza',
-                'email' => 'candidato2@campanhasja.com',
+                'name' => 'Tião do Gás',
+                'email' => 'tiaodogas@campanhasja.com',
                 'plan' => 'enterprise',
             ],
         ];
