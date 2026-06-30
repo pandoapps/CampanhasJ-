@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, type ChangeEvent } from 'react';
 import { motion } from 'motion/react';
 import { GlassCard } from '../../components/GlassCard';
 import { ConfirmModal } from '../../components/ConfirmModal';
@@ -21,6 +21,8 @@ export function ContactsCandidate() {
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<Contact | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
 
   const loadContacts = useCallback(() => {
@@ -93,6 +95,38 @@ export function ContactsCandidate() {
     finally { setDeleting(false); }
   };
 
+  const handleImportFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setImporting(true);
+    try {
+      const { data } = await contactService.import(file);
+      toast(data.message);
+      loadContacts();
+    } catch (e: unknown) {
+      toast(e instanceof Error ? e.message : 'Erro ao importar contatos.', 'error');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const downloadSampleCsv = () => {
+    const sample = [
+      'Nome,Telefone,Email,Tags',
+      'Maria Silva,(11) 91234-5678,maria@example.com,eleitor',
+      'Joao Souza,(11) 99876-5432,,voluntario',
+    ].join('\n');
+    const blob = new Blob([sample], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'exemplo-contatos.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const toggleTag = (id: string) =>
     setForm((p) => ({ ...p, tags: p.tags.includes(id) ? p.tags.filter((t) => t !== id) : [...p.tags, id] }));
 
@@ -104,7 +138,24 @@ export function ContactsCandidate() {
           <p className="text-white/50">Visualize e organize sua base de eleitores.</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button className="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg border border-white/10 text-sm font-medium transition-all">📥 Importar CSV</button>
+          <div className="flex flex-col items-center gap-1">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={handleImportFile}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+              className="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg border border-white/10 text-sm font-medium transition-all disabled:opacity-50">
+              {importing ? 'Importando...' : '📥 Importar CSV'}
+            </button>
+            <button type="button" onClick={downloadSampleCsv} className="text-[11px] text-white/40 hover:text-primary underline transition-colors">
+              visualizar exemplo
+            </button>
+          </div>
           <button className="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg border border-white/10 text-sm font-medium transition-all">📤 Exportar</button>
           <button onClick={openCreate} className="btn-primary py-2 px-6">➕ Adicionar Contato</button>
         </div>

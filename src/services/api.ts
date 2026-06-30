@@ -31,6 +31,13 @@ export const contactService = {
   create: (data: unknown) => api.post('/contacts', data),
   update: (id: string, data: unknown) => api.put(`/contacts/${id}`, data),
   delete: (id: string) => api.delete(`/contacts/${id}`),
+  import: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/contacts/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 export const tagService = {

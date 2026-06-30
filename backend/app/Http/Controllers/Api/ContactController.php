@@ -4,11 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Contact;
+use App\Services\ContactImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ContactController extends Controller
 {
+    public function __construct(private ContactImportService $contactImportService)
+    {
+    }
+
     public function index(Request $request): JsonResponse
     {
         $contacts = $request->user()
@@ -75,9 +80,14 @@ class ContactController extends Controller
 
     public function import(Request $request): JsonResponse
     {
-        $request->validate(['file' => 'required|file|mimes:csv,txt|max:10240']);
-        // Processamento de CSV via Job
-        return response()->json(['message' => 'Importação iniciada. Você será notificado quando concluir.']);
+        $data = $request->validate(['file' => 'required|file|mimes:csv,txt|max:10240']);
+
+        $result = $this->contactImportService->import($request->user(), $data['file']);
+
+        return response()->json([
+            'message' => "{$result['imported']} contato(s) importado(s) com sucesso.",
+            ...$result,
+        ]);
     }
 
     public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
